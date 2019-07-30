@@ -966,10 +966,11 @@ module Project = struct
       ]
       method! packages =
         (* XXX: use %%VERSION_NUM%% here instead of hardcoding a version? *)
-        let min = "3.5.0" and max = "3.6.0" in
+        let min = "4.0.0" and max = "4.1.0" in
         let common = [
-          package ~build:true ~min:"4.04.2" "ocaml";
+          package ~build:true ~min:"4.07.1" "ocaml";
           package "lwt";
+          package "mirage-os-shim";
           package ~min ~max "mirage-types-lwt";
           package ~min ~max "mirage-types";
           package ~min ~max "mirage-runtime" ;
@@ -979,12 +980,12 @@ module Project = struct
         ] in
         Key.match_ Key.(value target) @@ function
         | `Unix | `MacOSX ->
-          package ~min:"3.1.0" ~max:"4.0.0" "mirage-unix" :: common
+          package ~min:"4.0.0" ~max:"4.1.0" "mirage-unix" :: common
         | `Xen | `Qubes ->
-          package ~min:"3.1.0" ~max:"4.0.0" "mirage-xen" :: common
+          package ~min:"4.0.0" ~max:"4.1.0" "mirage-xen" :: common
         | `Virtio | `Hvt | `Muen | `Genode as tgt ->
           package ~min:"0.4.0" ~max:"0.5.0" ~ocamlfind:[] (fst (solo5_pkg tgt)) ::
-          package ~min:"0.5.0" ~max:"0.6.0" "mirage-solo5" ::
+          package ~min:"4.0.0" ~max:"4.1.0" "mirage-solo5" ::
           common
 
       method! build = build

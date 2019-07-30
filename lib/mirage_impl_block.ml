@@ -26,7 +26,7 @@ let make_block_t =
     b
 
 let xen_block_packages =
-  [ package ~min:"1.5.0" ~max:"2.0.0" ~sublibs:["front"] "mirage-block-xen" ]
+  [ package ~min:"1.6.2" ~max:"2.0.0" ~sublibs:["front"] "mirage-block-xen" ]
 
 (* this class takes a string rather than an int as `id` to allow the user to
    pass stuff like "/dev/xvdi1", which mirage-block-xen also understands *)
@@ -68,7 +68,7 @@ class block_conf file =
       Key.match_ Key.(value target) @@ function
       | `Xen | `Qubes -> xen_block_packages
       | `Virtio | `Hvt | `Muen | `Genode ->
-        [ package ~min:"0.4.0" ~max:"0.5.0" "mirage-block-solo5" ]
+        [ package ~min:"0.5.0" ~max:"0.6.0" "mirage-block-solo5" ]
       | `Unix | `MacOSX ->
         [ package ~min:"2.5.0" ~max:"3.0.0" "mirage-block-unix" ]
 

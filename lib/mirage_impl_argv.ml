@@ -17,7 +17,7 @@ let argv_solo5 = impl @@ object
     method name = "argv_solo5"
     method module_name = "Bootvar"
     method! packages =
-      Key.pure [ package ~min:"0.3.0" ~max:"0.4.0" "mirage-bootvar-solo5" ]
+      Key.pure [ package ~min:"0.4.0" ~max:"0.5.0" "mirage-bootvar-solo5" ]
     method! connect _ _ _ = "Bootvar.argv ()"
   end
 
@@ -35,7 +35,7 @@ let argv_xen = impl @@ object
     method name = "argv_xen"
     method module_name = "Bootvar"
     method! packages =
-      Key.pure [ package ~min:"0.5.0" ~max:"0.6.0" "mirage-bootvar-xen" ]
+      Key.pure [ package ~min:"0.6.0" ~max:"0.7.0" "mirage-bootvar-xen" ]
     method! connect _ _ _ = Fmt.strf
       (* Some hypervisor configurations try to pass some extra arguments.
        * They means well, but we can't do much with them,
