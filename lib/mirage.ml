@@ -535,6 +535,10 @@ let variant_of_target = function
   | `Virtio | `Hvt | `Muen | `Genode  -> "freestanding"
   | _ -> "unix"
 
+let exclude_modules_of_target = function
+  | #Mirage_key.mode_solo5 -> "config manifest"
+  | _ -> "config"
+
 let sxp_of_fmt fmt = Fmt.kstrf Sexp.of_string fmt
 
 let config_unix ~name ~binary_location ~target =
@@ -633,7 +637,7 @@ let config_solo5_hvt i ~name ~binary_location =
     (alias
       (name hvt)
       (enabled_if (= %%{context_name} "mirage-freestanding"))
-      (deps solo5-hvt %s))
+      (deps %s))
   |} out
   in
   (* Generate solo5-hvt rules*)
@@ -648,32 +652,18 @@ let config_solo5_hvt i ~name ~binary_location =
       [] libs @ (if target_debug then ["gdb"] else [])
   in
   let tender_mods = String.concat ~sep:" " tender_mods in
-  let rule_solo5_makefile = sxp_of_fmt {|
-      (rule
-        (targets Makefile.solo5-hvt)
-        (action (run solo5-hvt-configure %%{read:libdir} %s)))
-    |} tender_mods
-  in
-  let rule_solo5_hvt = sxp_of_fmt {|
-    (rule
-      (targets solo5-hvt)
-      (deps Makefile.solo5-hvt)
-      (mode promote)
-      (action (run make -f Makefile.solo5-hvt solo5-hvt)))
-  |}
-  in
   (* Generate unikernel linking rule*)
   let rule_unikernel = sxp_of_fmt {|
     (rule
       (targets %s)
       (mode promote)
-      (deps %s)
-      (action (run %%{read-lines:ld} %%{read-lines:ldflags} %s -o %s)))
+      (deps %s manifest.o)
+      (action (run %%{read-lines:ld} %%{read-lines:ldflags} manifest.o %s -o %s)))
   |} out
      binary_location
      binary_location out
   in
-  Ok [alias; rule_solo5_makefile; rule_solo5_hvt; rule_unikernel]
+  Ok [alias; rule_unikernel]
 
 let config_solo5_default ~name ~binary_location ~target =
   let _, post = solo5_pkg target in
@@ -709,9 +699,22 @@ let config_solo5 i ~name ~binary_location ~target =
   let rule_ldflags = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:ldflags} ldflags))" in
   let rule_cflags = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:cflags} cflags))" in
   let rule_ld = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:ld} ld))" in
-  let rule_libdir = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:libdir} libdir))"
-  in
-  Ok (rule_ldflags::rule_cflags::rule_libs::rule_libdir::rule_ld::base_rules)
+  let rule_libdir = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:libdir} libdir))" in
+  let rule_manifest_c = sxp_of_fmt {|
+    (rule
+      (targets manifest.c)
+      (deps manifest.json)
+      (action
+       (run solo5-elftool gen-manifest manifest.json manifest.c))) |} in
+  let rule_manifest_o = sxp_of_fmt {|
+    (library
+      (name manifest)
+      (modules manifest)
+      (c_names manifest)
+      (c_flags (:include cflags)))
+  |} in
+  Bos.OS.File.write (Fpath.v "manifest.ml") "" >>= fun () ->
+  Ok (rule_ldflags::rule_cflags::rule_libs::rule_libdir::rule_ld::rule_manifest_c::rule_manifest_o::base_rules)
 
 let configure_postbuild_rules i ~name ~binary_location ~target =
   match target with
@@ -731,8 +734,9 @@ let dune_project_filename = Fpath.(v "dune-project")
 let configure_dune_workspace i =
   let ctx = Info.context i in
   let target = Key.(get ctx target) in
-  let lang = sxp_of_fmt "(lang dune 1.11)"
-  and variants_feature = sxp_of_fmt "(using library_variants 0.1)"
+  let lang = sxp_of_fmt "(lang dune 2.0)"
+  and variants_feature = sxp_of_fmt "(using library_variants 0.2)"
+  and implicit_transitive_deps = sxp_of_fmt "(implicit_transitive_deps true)"
   and profile_release = sxp_of_fmt "(profile release)"
   and base_context = sxp_of_fmt "(context (default))"
   in
@@ -756,7 +760,7 @@ let configure_dune_workspace i =
     (List.map (fun x -> (Sexp.to_string_hum x)^"\n") rules)
   >>= fun () ->
   (* write dune-project *)
-  let rules = [lang; variants_feature]
+  let rules = [lang; variants_feature; implicit_transitive_deps]
   in
   Bos.OS.File.write_lines
     dune_project_filename
@@ -793,7 +797,8 @@ let configure_dune i =
   let s_libraries = String.concat ~sep:" " libs in
   let s_link_flags = String.concat ~sep:" " lflags in
   let s_compilation_flags = String.concat ~sep:" " cflags in
-  let s_variants = variant_of_target target
+  let s_variants = variant_of_target target in
+  let s_exclude_modules = exclude_modules_of_target target
   in
   let config = sxp_of_fmt {|
     (executable
@@ -801,9 +806,11 @@ let configure_dune i =
       (modes %s)
       (libraries %s)
       (link_flags %s)
+      (modules (:standard \ %a))
       (flags %s)
       (variants %s))
-  |} s_output_mode
+  |} s_exclude_modules
+     s_output_mode
      s_libraries
      s_link_flags
      s_compilation_flags
@@ -818,6 +825,8 @@ let configure_dune i =
 
 (* we made it, so we should clean it up *)
 let clean_dune () = Bos.OS.File.delete dune_filename
+let clean_dune_project () = Bos.OS.File.delete dune_project_filename
+let clean_dune_workspace () = Bos.OS.File.delete dune_workspace_filename
 
 let opam_file n = Fpath.(v n + "opam")
 
@@ -844,7 +853,7 @@ let unikernel_opam_name name target =
   let target_str = Fmt.strf "%a" Key.pp_target target in
   opam_name name target_str
 
-let solo5_manifest_path = "_build/manifest.json"
+let solo5_manifest_path = "manifest.json"
 
 let generate_manifest_json () =
   Log.info (fun m -> m "generating manifest");
@@ -954,6 +963,8 @@ let clean i =
   clean_main_xe ~name >>= fun () ->
   clean_main_libvirt_xml ~name >>= fun () ->
   clean_dune () >>= fun () ->
+  clean_dune_project () >>= fun () ->
+  clean_dune_workspace () >>= fun () ->
   Bos.OS.File.delete Fpath.(v "Makefile") >>= fun () ->
   rr_iter (clean_opam name)
     [`Unix; `MacOSX; `Xen; `Qubes; `Hvt; `Spt; `Virtio; `Muen; `Genode]
@@ -965,10 +976,12 @@ let clean i =
     ["xen"; "elf"; "hvt"; "spt"; "virtio"; "muen"; "genode"]
   >>= fun () ->
   (* The following deprecated names are kept here to allow "mirage clean" to
-   * continue to work after an upgrade. *)
+   * continue to work after an upgrade.
+   * TODO: separate clean for Solo5 and clean for Xen. *)
   Bos.OS.File.delete Fpath.(v "Makefile.solo5-hvt") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(v "_build-solo5-hvt") >>= fun () ->
   Bos.OS.File.delete Fpath.(v "solo5-hvt") >>= fun () ->
+  Bos.OS.File.delete Fpath.(v "manifest.json") >>= fun () ->
   Bos.OS.File.delete (opam_file (opam_name name "ukvm")) >>= fun () ->
   Bos.OS.File.delete Fpath.(v name + "ukvm") >>= fun () ->
   Bos.OS.File.delete Fpath.(v "Makefile.ukvm") >>= fun () ->
@@ -1021,7 +1034,7 @@ module Project = struct
           package ~min:"4.0.0" ~max:"4.1.0" "mirage-xen" :: common
         | #Mirage_key.mode_solo5 as tgt ->
           package ~min:"0.6.0" ~max:"0.7.0" ~ocamlfind:[] (fst (solo5_pkg tgt)) ::
-          package ~min:"0.6.0" ~max:"0.7.0" "mirage-solo5" ::
+          package ~min:"4.0.0" ~max:"4.1.0" "mirage-solo5" ::
           common
 
       method! build = build
