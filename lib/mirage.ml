@@ -29,6 +29,8 @@ open Mirage_impl_misc
 
 include Functoria
 
+(** {2 OCamlfind predicates} *)
+
 (** {2 Devices} *)
 
 type qubesdb = Mirage_impl_qubesdb.qubesdb
@@ -618,7 +620,7 @@ let config_xen ~name ~binary_location ~target =
 let solo5_pkg = function
   | `Virtio -> "solo5-bindings-virtio", ".virtio"
   | `Muen -> "solo5-bindings-muen", ".muen"
-  | `Hvt -> "solo5-bindings-hvt", ".hvt"
+  | `Hvt | `Spt -> "solo5-bindings-hvt", ".hvt"
   | `Genode -> "solo5-bindings-genode", ".genode"
   | `Unix | `MacOSX | `Xen | `Qubes ->
     invalid_arg "solo5_kernel only defined for solo5 targets"
@@ -715,7 +717,7 @@ let configure_postbuild_rules i ~name ~binary_location ~target =
   match target with
   | `Unix | `MacOSX -> config_unix ~name ~binary_location ~target
   | `Xen | `Qubes -> config_xen ~name ~binary_location ~target
-  | `Virtio | `Muen | `Hvt | `Genode -> config_solo5 i ~name ~binary_location ~target
+  | `Virtio | `Muen | `Hvt | `Spt | `Genode -> config_solo5 i ~name ~binary_location ~target
 
 let target_file = function
   | `Unix | `MacOSX -> "main.exe"
@@ -842,6 +844,34 @@ let unikernel_opam_name name target =
   let target_str = Fmt.strf "%a" Key.pp_target target in
   opam_name name target_str
 
+let solo5_manifest_path = "_build/manifest.json"
+
+let generate_manifest_json () =
+  Log.info (fun m -> m "generating manifest");
+  let networks = List.map (fun n -> (n, `Network))
+    !Mirage_impl_network.all_networks in
+  let blocks = Hashtbl.fold (fun k _v acc -> (k, `Block) :: acc)
+      Mirage_impl_block.all_blocks [] in
+  let to_string (name, typ) =
+    Fmt.strf {json|{ "name": %S, "type": %S }|json}
+      name
+      (match typ with `Network -> "NET_BASIC" | `Block -> "BLOCK_BASIC") in
+  let devices = List.map to_string (networks @ blocks) in
+  let s = String.concat ~sep:", " devices in
+  let open Codegen in
+  let file = Fpath.(v solo5_manifest_path) in
+  with_output file (fun oc () ->
+      let fmt = Format.formatter_of_out_channel oc in
+      append fmt
+{json|{
+  "type": "solo5.manifest",
+  "version": 1,
+  "devices": [ %s ]
+}
+|json} s;
+      R.ok ())
+    "Solo5 application manifest file"
+
 let configure i =
   let name = Info.name i in
   let root = Fpath.to_string (Info.build_dir i) in
@@ -857,6 +887,9 @@ let configure i =
   configure_opam ~name:opam_name i >>= fun () ->
   let no_depext = Key.(get ctx no_depext) in
   configure_makefile ~no_depext ~opam_name >>= fun () ->
+  (match target with
+    | #Mirage_key.mode_solo5 -> generate_manifest_json ()
+    | _ -> R.ok ()) >>= fun () ->
   match target with
   | `Xen ->
     configure_main_xl "xl" i >>= fun () ->
@@ -878,7 +911,6 @@ let compile target =
   in
   Log.info (fun m -> m "executing %a" Bos.Cmd.pp cmd);
   Bos.OS.Cmd.run cmd
-
 
 let link _info _name _target _target_debug = Ok ()
 let check_entropy libs =
@@ -904,7 +936,18 @@ let build i =
   link i name target target_debug >>| fun () ->
   Log.info (fun m -> m "Build succeeded")
 
+let clean_opam name target =
+  Bos.OS.File.delete (opam_file (unikernel_opam_name name target))
+
+let clean_binary name suffix =
+  Bos.OS.File.delete Fpath.(v name + suffix)
+
 let clean i =
+  let rec rr_iter f l =
+    match l with
+    | [] -> R.ok ()
+    | x :: l -> f x >>= fun () -> rr_iter f l
+  in
   let name = Info.name i in
   clean_main_xl ~name "xl" >>= fun () ->
   clean_main_xl ~name "xl.in" >>= fun () ->
@@ -912,27 +955,20 @@ let clean i =
   clean_main_libvirt_xml ~name >>= fun () ->
   clean_dune () >>= fun () ->
   Bos.OS.File.delete Fpath.(v "Makefile") >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `Hvt)) >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `Unix)) >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `Xen)) >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `Qubes)) >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `Muen)) >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `MacOSX)) >>= fun () ->
-  Bos.OS.File.delete (opam_file (unikernel_opam_name name `Genode)) >>= fun () ->
+  rr_iter (clean_opam name)
+    [`Unix; `MacOSX; `Xen; `Qubes; `Hvt; `Spt; `Virtio; `Muen; `Genode]
+  >>= fun () ->
   Bos.OS.File.delete Fpath.(v "main.native.o") >>= fun () ->
   Bos.OS.File.delete Fpath.(v "main.native") >>= fun () ->
   Bos.OS.File.delete Fpath.(v name) >>= fun () ->
-  Bos.OS.File.delete Fpath.(v name + "xen") >>= fun () ->
-  Bos.OS.File.delete Fpath.(v name + "elf") >>= fun () ->
-  Bos.OS.File.delete Fpath.(v name + "virtio") >>= fun () ->
-  Bos.OS.File.delete Fpath.(v name + "muen") >>= fun () ->
-  Bos.OS.File.delete Fpath.(v name + "hvt") >>= fun () ->
-  Bos.OS.File.delete Fpath.(v name + "genode") >>= fun () ->
+  rr_iter (clean_binary name)
+    ["xen"; "elf"; "hvt"; "spt"; "virtio"; "muen"; "genode"]
+  >>= fun () ->
+  (* The following deprecated names are kept here to allow "mirage clean" to
+   * continue to work after an upgrade. *)
   Bos.OS.File.delete Fpath.(v "Makefile.solo5-hvt") >>= fun () ->
   Bos.OS.Dir.delete ~recurse:true Fpath.(v "_build-solo5-hvt") >>= fun () ->
   Bos.OS.File.delete Fpath.(v "solo5-hvt") >>= fun () ->
-  (* The following deprecated names are kept here to allow "mirage clean" to
-   * continue to work after an upgrade. *)
   Bos.OS.File.delete (opam_file (opam_name name "ukvm")) >>= fun () ->
   Bos.OS.File.delete Fpath.(v name + "ukvm") >>= fun () ->
   Bos.OS.File.delete Fpath.(v "Makefile.ukvm") >>= fun () ->
@@ -979,12 +1015,12 @@ module Project = struct
           package ~build:true "dune" ;
         ] in
         Key.match_ Key.(value target) @@ function
-        | `Unix | `MacOSX ->
+        | #Mirage_key.mode_unix ->
           package ~min:"4.0.0" ~max:"4.1.0" "mirage-unix" :: common
-        | `Xen | `Qubes ->
+        | #Mirage_key.mode_xen ->
           package ~min:"4.0.0" ~max:"4.1.0" "mirage-xen" :: common
-        | `Virtio | `Hvt | `Muen | `Genode as tgt ->
-          package ~min:"0.4.0" ~max:"0.5.0" ~ocamlfind:[] (fst (solo5_pkg tgt)) ::
+        | #Mirage_key.mode_solo5 as tgt ->
+          package ~min:"0.6.0" ~max:"0.7.0" ~ocamlfind:[] (fst (solo5_pkg tgt)) ::
           package ~min:"4.0.0" ~max:"4.1.0" "mirage-solo5" ::
           common
 
@@ -1006,21 +1042,11 @@ let (++) acc x = match acc, x with
   | None, Some x -> Some [x]
   | Some acc, Some x -> Some (acc @ [x])
 
-(* TODO: ideally we'd combine these *)
-let qrexec_init = match_impl Key.(value target) [
-  `Qubes, Mirage_impl_qrexec.qrexec_qubes;
-] ~default:Functoria_app.noop
-
-let gui_init = match_impl Key.(value target) [
-  `Qubes, Mirage_impl_gui.gui_qubes;
-] ~default:Functoria_app.noop
-
 let register
     ?(argv=default_argv) ?tracing ?(reporter=default_reporter ())
     ?keys ?packages
     name jobs =
-  let argv = Some (Functoria_app.keys argv) in
+  let argv = Some [Functoria_app.keys argv] in
   let reporter = if reporter == no_reporter then None else Some reporter in
-  let qubes_init = Some [qrexec_init; gui_init] in
-  let init = qubes_init ++ argv ++ reporter ++ tracing in
+  let init = argv ++ reporter ++ tracing in
   register ?keys ?packages ?init name jobs

@@ -1,3 +1,24 @@
+### v3.6.0 (2019-10-02)
+
+* solo5 0.6 support for multiple devices (#993, by @mato)
+  please read https://github.com/Solo5/solo5/blob/v0.6.2/CHANGES.md for detailed changes
+  observable mirage changes:
+  - new target `-t spt` for sandboxed processed tender (seccomp on Linux)
+  - new functions Mirage_key.is_solo5 and Mirage_key.is_xen, analogue to Mirage_key.is_unix
+* respect verbosity when calling `ocamlbuild` -- verbose if log level is info or debug (#999, by @mato)
+
+### v3.5.2 (2019-08-22)
+
+* Adapt to conduit 2.0.0 release, including dns 4.0.0 (#996, by @hannesm)
+* Adjust mirage-xen constraints to < 5.0.0 (#995, by @reynir)
+
+### v3.5.1 (2019-07-11)
+
+* Adapt to new tracing API (#985, by @talex5)
+* Remove stubs for qrexec and qubes gui (qubes 3 is end of life, qubes 4 makes it configurable) (#984, by @linse & @yomimono)
+* Update mirage-logs and charrua-client-mirage version constraints (#982, by @hannesm)
+* Remove unused dockerfile, travis updates (#982 #990, by @hannesm)
+
 ### v3.5.0 (2019-03-03)
 
 * Rename Mirage_impl_kv_ro to Mirage_impl_kv, and introduce `rw` (#975, by @hannesm)

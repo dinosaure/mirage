@@ -12,7 +12,7 @@ let stdlib_random_conf = object
       Mirage_key.match_ Mirage_key.(value target) @@ function
       | `Unix | `MacOSX ->
         [ package ~max:"0.1.0" "mirage-random-stdlib" ]
-      | `Hvt | `Virtio | `Muen | `Genode ->
+      | `Hvt | `Spt | `Virtio | `Muen | `Genode ->
         [ package ~max:"0.1.0" "mirage-random-stdlib" ]
       | `Xen | `Qubes ->
         [ package ~max:"0.1.0" "mirage-random-stdlib" ]
@@ -39,7 +39,7 @@ let nocrypto = impl @@ object
       | `Unix | `MacOSX ->
         [ package ~min:"0.5.4" ~max:"0.6.0" ~sublibs:["lwt"] "nocrypto" ;
           package "zarith"  ]
-      | `Hvt | `Virtio | `Muen | `Genode
+      | `Hvt | `Spt | `Virtio | `Muen | `Genode
       | `Xen | `Qubes ->
         [ package ~min:"0.5.4" ~max:"0.6.0" ~sublibs:["mirage"] "nocrypto" ;
           package ~min:"0.4.1" ~max:"0.5.0" "mirage-entropy"  ;
@@ -48,9 +48,9 @@ let nocrypto = impl @@ object
     method! build _ = Rresult.R.ok (enable_entropy ())
     method! connect i _ _ =
       match Mirage_impl_misc.get_target i with
-      | `Xen | `Qubes | `Virtio | `Hvt | `Muen | `Genode ->
+      | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 ->
         "Nocrypto_entropy_mirage.initialize ()"
-      | `Unix | `MacOSX -> "Nocrypto_entropy_lwt.initialize ()"
+      | #Mirage_key.mode_unix -> "Nocrypto_entropy_lwt.initialize ()"
   end
 
 let nocrypto_random_conf = object
