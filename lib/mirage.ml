@@ -809,10 +809,10 @@ let configure_dune i =
       (modules (:standard \ %s))
       (flags %s)
       (variants %s))
-  |} s_exclude_modules
-     s_output_mode
+  |} s_output_mode
      s_libraries
      s_link_flags
+     s_exclude_modules
      s_compilation_flags
      s_variants
   in
