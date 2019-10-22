@@ -14,6 +14,6 @@ val default_random : ?entry_points:entry_points Functoria.impl -> unit -> random
 
 val nocrypto : Functoria.job Functoria.impl
 
-val nocrypto_random : (entry_points -> random) Functoria.impl
+val nocrypto_random : random Functoria.impl
 
 val is_entropy_enabled : unit -> bool

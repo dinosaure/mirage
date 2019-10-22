@@ -42,6 +42,10 @@ let mirage_log ?ring_size ~default =
 
 let default_reporter
     ?(clock=default_posix_clock) ?ring_size ?(level=Logs.Info) () =
+  Fmt.pr "---------- default_reporter ----------\n%!" ;
+  Fmt.pr "%a\n%!" Functoria_graph.pp_dot (Functoria_graph.create (mirage_log ?ring_size ~default:level)) ;
+  Fmt.pr "---------- default_reporter applied ----------\n%!" ;
+  Fmt.pr "%a\n%!" Functoria_graph.pp_dot (Functoria_graph.create (mirage_log ?ring_size ~default:level $ clock)) ;
   mirage_log ?ring_size ~default:level $ clock
 
 let no_reporter = impl @@ object

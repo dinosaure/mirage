@@ -128,7 +128,7 @@ val default_entry_points: entry_points impl
 val stdlib_random: entry_points impl -> random impl
 (** Passthrough to the OCaml Random generator. *)
 
-val nocrypto_random: (entry_points -> random) impl
+val nocrypto_random: random impl
 (** Passthrough to the Fortuna PRNG implemented in nocrypto. *)
 
 val default_random: ?entry_points:entry_points impl -> unit -> random impl
