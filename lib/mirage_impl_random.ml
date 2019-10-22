@@ -1,30 +1,28 @@
 open Functoria
 
-let () = Printexc.record_backtrace true
-
 type random = RANDOM
 let random = Type RANDOM
 
-type main = MAIN
-let main = Type MAIN
+type entry_points = ENTRY_POINTS
+let entry_points = Type ENTRY_POINTS
 
-let main_target = function
-  | #Mirage_key.mode_unix -> [ package ~sublibs:[ "main" ] "mirage-unix" ]
+let entry_points_of_target = function
+  | #Mirage_key.mode_unix  -> [ package ~sublibs:[ "main" ] "mirage-unix" ]
   | #Mirage_key.mode_solo5 -> [ package ~sublibs:[ "main" ] "mirage-solo5" ]
-  | #Mirage_key.mode_xen -> [ package ~sublibs:[ "main" ] "mirage-xen" ]
+  | #Mirage_key.mode_xen   -> [ package ~sublibs:[ "main" ] "mirage-xen" ]
 
-let main_config = object
+let entry_points_config = object
   inherit base_configurable
-  method ty = main
-  method name = "mirage-main-unix"
-  method module_name = "Mirage_main"
+  method ty = entry_points
+  method name = "mirage-entry-points"
+  method module_name = "Mirage_entry_points"
   method! packages =
-    Mirage_key.map (fun mode ->  package "mirage-os-shim" :: main_target mode) (Mirage_key.value Mirage_key.target)
+    Mirage_key.map (fun mode ->  package "mirage-os-shim" :: entry_points_of_target mode) (Mirage_key.value Mirage_key.target)
 end
 
 let stdlib_random_config = object
   inherit base_configurable
-  method ty = main @-> random
+  method ty = entry_points @-> random
   method name = "stdlib-random"
   method module_name = "Mirage_random_stdlib.Make"
   method! packages =
@@ -32,8 +30,10 @@ let stdlib_random_config = object
   method! connect _ modname _ = Fmt.strf "%s.initialize ()" modname
 end
 
-let default_main = impl main_config
-let stdlib_random = impl stdlib_random_config
+let default_entry_points = impl entry_points_config
+
+let stdlib_random_func = impl stdlib_random_config
+let stdlib_random (entry_points : entry_points impl) = stdlib_random_func $ entry_points
 
 (* This is to check that entropy is a dependency if "tls" is in
    the package array. *)
@@ -66,7 +66,7 @@ let nocrypto = impl @@ object
 
 let nocrypto_random_conf = object
   inherit base_configurable
-  method ty = main @-> random
+  method ty = entry_points @-> random
   method name = "random"
   method module_name = "Nocrypto.Rng"
   method! packages =
@@ -76,9 +76,9 @@ end
 
 let nocrypto_random = impl nocrypto_random_conf
 
-let default_random ?(main = default_main) () =
-  let stdlib_random = stdlib_random $ main in
+let default_random ?(entry_points = default_entry_points) () =
+  let stdlib_random = stdlib_random entry_points in
   match_impl (Mirage_key.value Mirage_key.prng) [
     `Stdlib  , stdlib_random;
-    `Nocrypto, nocrypto_random $ main;
+    `Nocrypto, nocrypto_random $ entry_points;
   ] ~default:stdlib_random

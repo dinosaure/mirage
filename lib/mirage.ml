@@ -54,9 +54,9 @@ type mclock = Mirage_impl_mclock.mclock
 let mclock = Mirage_impl_mclock.mclock
 let default_monotonic_clock = Mirage_impl_mclock.default_monotonic_clock
 
-type main = Mirage_impl_random.main
-let main = Mirage_impl_random.main
-let default_main = Mirage_impl_random.default_main
+type entry_points = Mirage_impl_random.entry_points
+let entry_points = Mirage_impl_random.entry_points
+let default_entry_points = Mirage_impl_random.default_entry_points
 
 type random = Mirage_impl_random.random
 let random = Mirage_impl_random.random
