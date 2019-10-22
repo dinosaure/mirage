@@ -45,7 +45,7 @@ let resolver_dns_conf ~ns ~ns_port = impl @@ object
       | _ -> failwith (connect_err "resolver" 3)
   end
 
-let resolver_dns ?ns ?ns_port ?(random = default_random) ?(time = default_time) stack =
+let resolver_dns ?ns ?ns_port ?(random = default_random ()) ?(time = default_time) stack =
   let ns = Key.resolver ?default:ns ()
   and ns_port = Key.resolver_port ?default:ns_port ()
   in

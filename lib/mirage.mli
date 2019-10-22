@@ -119,18 +119,22 @@ type random
 val random: random typ
 (** Implementations of the [Mirage_types.RANDOM] signature. *)
 
-val stdlib_random: random impl
+type main
+
+val main: main typ
+
+val default_main: main impl
+
+val stdlib_random: (main -> random) impl
 (** Passthrough to the OCaml Random generator. *)
 
-val nocrypto_random: random impl
+val nocrypto_random: (main -> random) impl
 (** Passthrough to the Fortuna PRNG implemented in nocrypto. *)
 
-val default_random: random impl
+val default_random: ?main:main impl -> unit -> random impl
 (** Default PRNG device to be used in unikernels.  It defaults to {!stdlib}, but
     users can override using the {!Key.prng} command line argument.
 *)
-
-
 
 (** {2 Consoles} *)
 

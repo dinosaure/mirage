@@ -28,7 +28,7 @@ end
 
 (* Value restriction ... *)
 let udp_direct_func () = impl (udp_direct_conf ())
-let direct_udp ?(random=default_random) ip = udp_direct_func () $ ip $ random
+let direct_udp ?(random=default_random ()) ip = udp_direct_func () $ ip $ random
 
 let udpv4_socket_conf ipv4_key = object
   inherit base_configurable

@@ -33,7 +33,7 @@ let tcp_direct_func () = impl (tcp_direct_conf ())
 
 let direct_tcp
     ?(clock=default_monotonic_clock)
-    ?(random=default_random)
+    ?(random=default_random ())
     ?(time=default_time) ip =
   tcp_direct_func () $ ip $ time $ clock $ random
 

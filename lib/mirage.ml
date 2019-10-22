@@ -54,6 +54,10 @@ type mclock = Mirage_impl_mclock.mclock
 let mclock = Mirage_impl_mclock.mclock
 let default_monotonic_clock = Mirage_impl_mclock.default_monotonic_clock
 
+type main = Mirage_impl_random.main
+let main = Mirage_impl_random.main
+let default_main = Mirage_impl_random.default_main
+
 type random = Mirage_impl_random.random
 let random = Mirage_impl_random.random
 let stdlib_random = Mirage_impl_random.stdlib_random
@@ -625,7 +629,7 @@ let configure i =
 
 let terminal () =
   let dumb = try Sys.getenv "TERM" = "dumb" with Not_found -> true in
-  let isatty = try Unix.(isatty (descr_of_out_channel Pervasives.stdout)) with
+  let isatty = try Unix.(isatty (descr_of_out_channel Stdlib.stdout)) with
     | Unix.Unix_error _ -> false
   in
   not dumb && isatty
@@ -954,13 +958,11 @@ module Project = struct
         ] in
         Key.match_ Key.(value target) @@ function
         | #Mirage_key.mode_unix ->
-          package ~min:"3.1.0" ~max:"4.0.0" "mirage-unix" ::
-          package ~sublibs:[ "os" ] ~min:"3.1.0" ~max:"4.0.0" "mirage-unix" :: common
+          package ~min:"3.1.0" ~max:"4.0.0" "mirage-unix" :: common
         | #Mirage_key.mode_xen ->
           package ~min:"3.1.0" ~max:"5.0.0" "mirage-xen" :: common
         | #Mirage_key.mode_solo5 as tgt ->
           package ~min:"0.6.0" ~max:"0.7.0" ~ocamlfind:[] (fst (solo5_pkg tgt)) ::
-          package ~sublibs:[ "os" ] ~min:"0.6.0" ~max:"0.7.0" "mirage-solo5" ::
           package ~min:"0.6.0" ~max:"0.7.0" "mirage-solo5" ::
           common
 

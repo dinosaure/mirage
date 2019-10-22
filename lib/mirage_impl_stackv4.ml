@@ -37,7 +37,7 @@ let stackv4_direct_conf ?(group="") () = impl @@ object
 
 let direct_stackv4
     ?(clock=default_monotonic_clock)
-    ?(random=default_random)
+    ?(random=default_random ())
     ?(time=default_time)
     ?group
     network eth arp ip =
@@ -48,7 +48,7 @@ let direct_stackv4
   $ direct_udp ~random ip
   $ direct_tcp ~clock ~random ~time ip
 
-let dhcp_ipv4_stack ?group ?(random = default_random) ?(time = default_time) ?(arp = arp ?time:None) tap =
+let dhcp_ipv4_stack ?group ?(random = default_random ()) ?(time = default_time) ?(arp = arp ?time:None) tap =
   let config = dhcp random time tap in
   let e = etif tap in
   let a = arp e in
