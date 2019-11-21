@@ -733,7 +733,7 @@ let target_file = function
   | _ -> "main.exe.o"
 
 
-let dune_filename = Fpath.(v "dune")
+let dune_filename = Fpath.(v "dune.build")
 let dune_workspace_filename = Fpath.(v "dune-workspace")
 let dune_project_filename = Fpath.(v "dune-project")
 
