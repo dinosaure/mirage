@@ -1,3 +1,17 @@
+### v3.7.1 (2019-11-03)
+
+* clean opam files when `mirage configure` is executed (#1013 @dinosaure)
+* deprecate mirage-types and mirage-types-lwt (#1006 @hannes)
+* remove abstraction over 'type 'a io' and 'buffer', remove mirage-*-lwt packages (#1006 @hannesm)
+* unify targets in respect to hooks (Mirage_runtime provides the hooks and registration)
+* unify targets in respect to error handling (no toplevel try .. with installed anymore, mirage-unix does no longer ignore all errors)
+
+### v3.7.0 (2019-11-01)
+
+* mirage-runtime: provide at_enter_iter/at_exit_iter/at_exit hooks for the event loop (#1010, @samoht @dinosaure @hannesm)
+* call `exit 0` after the Lwt event loop returned (to run at_exit handlers in freestanding environments) (#1011, @hannesm)
+* NOTE: this release only contains the mirage-runtime opam package to unblock other releases, there'll be a 3.7.1 soon
+
 ### v3.6.0 (2019-10-02)
 
 * solo5 0.6 support for multiple devices (#993, by @mato)
