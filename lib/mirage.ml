@@ -775,7 +775,7 @@ let generate_manifest_c () =
   Log.info (fun m -> m "executing %a" Bos.Cmd.pp cmd);
   Bos.OS.Cmd.run cmd
 
-let dune_filename = Fpath.v "dune"
+let dune_filename = Fpath.v "dune.build"
 let dune_workspace_filename = Fpath.v "dune-workspace"
 let dune_project_filename = Fpath.v "dune-project"
 
