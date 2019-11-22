@@ -750,8 +750,7 @@ let configure_solo5 i ~name ~binary_location ~target =
       (library
         (name manifest)
         (modules manifest)
-        (c_names manifest)
-        (c_flags (:include cflags)))
+        (foreign_stubs (language c) (names manifest) (flags (:include cflags))))
       |} in
   Bos.OS.File.write (Fpath.v "manifest.ml") "" >>= fun () ->
   Ok ( rule_ldflags
@@ -776,7 +775,7 @@ let generate_manifest_c () =
   Log.info (fun m -> m "executing %a" Bos.Cmd.pp cmd);
   Bos.OS.Cmd.run cmd
 
-let dune_filename = Fpath.v "dune.build"
+let dune_filename = Fpath.v "dune"
 let dune_workspace_filename = Fpath.v "dune-workspace"
 let dune_project_filename = Fpath.v "dune-project"
 
@@ -942,9 +941,6 @@ let configure i =
   configure_opam ~name:opam_name i >>= fun () ->
   let no_depext = Key.(get ctx no_depext) in
   configure_makefile ~no_depext ~opam_name >>= fun () ->
-  (match target with
-    | #Mirage_key.mode_solo5 -> generate_manifest_json ()
-    | _ -> R.ok ()) >>= fun () ->
   match target with
   | `Xen ->
     configure_main_xl "xl" i >>= fun () ->
@@ -953,6 +949,8 @@ let configure i =
     configure_main_libvirt_xml ~root ~name
   | `Virtio ->
     configure_virtio_libvirt_xml ~root ~name
+  | #Mirage_key.mode_solo5 ->
+    generate_manifest_json ()
   | _ -> R.ok ()
 
 (*
