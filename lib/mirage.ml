@@ -764,16 +764,15 @@ let configure_solo5 i ~name ~binary_location ~target =
 
 let cflags pkg = pkg_config pkg ["--cflags"]
 
-let solo5_manifest_filename = Fpath.v "manifest.json"
-let clean_solo5_manifest () = Bos.OS.File.delete solo5_manifest_filename
-
+(*
 let generate_manifest_c () =
   let json = solo5_manifest_filename in
-  let c = "_build/manifest.c" in
+  let c = "manifest.c" in
   let cmd = Bos.Cmd.(v "solo5-elftool" % "gen-manifest" % Fpath.to_string json % c) in
   Bos.OS.Dir.create Fpath.(v "_build") >>= fun _created ->
   Log.info (fun m -> m "executing %a" Bos.Cmd.pp cmd);
   Bos.OS.Cmd.run cmd
+*)
 
 let dune_filename = Fpath.v "dune.build"
 let dune_workspace_filename = Fpath.v "dune-workspace"
@@ -805,7 +804,7 @@ let unikernel_opam_name name target =
 let clean_opam name target =
   Bos.OS.File.delete (opam_filename (unikernel_opam_name name target))
 
-let solo5_manifest_path = "_build/manifest.json"
+let solo5_manifest_filename = Fpath.v "manifest.json"
 
 let generate_manifest_json () =
   Log.info (fun m -> m "generating manifest");
@@ -820,7 +819,7 @@ let generate_manifest_json () =
   let devices = List.map to_string (networks @ blocks) in
   let s = String.concat ~sep:", " devices in
   let open Codegen in
-  let file = Fpath.(v solo5_manifest_path) in
+  let file = solo5_manifest_filename in
   with_output file (fun oc () ->
       let fmt = Format.formatter_of_out_channel oc in
       append fmt
@@ -833,8 +832,8 @@ let generate_manifest_json () =
       R.ok ())
     "Solo5 application manifest file"
 
-let clean_manifest () =
-  Bos.OS.File.delete Fpath.(v solo5_manifest_path)
+let clean_solo5_manifest () =
+  Bos.OS.File.delete solo5_manifest_filename
 
 let custom_runtime = function
   | #Mirage_key.mode_xen -> Some "xen"
