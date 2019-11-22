@@ -3,6 +3,7 @@
   (public_name mirage-types)
   (wrapped     false)
   (modules     mirage_types)
+  (flags       (:standard -w -3))
   (libraries   mirage-device mirage-time mirage-random mirage-flow
                mirage-console mirage-block mirage-clock mirage-net
                mirage-kv mirage-fs mirage-channel
