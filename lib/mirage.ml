@@ -671,8 +671,8 @@ let configure_xen ~name ~binary_location ~target =
   | true -> configure_xen_arm ~out ~linker_command ~binary_location
   | false -> configure_xen_default ~out ~linker_command ~binary_location
   >>= fun rules ->
-  let rules_libs = sxp_of_fmt "(rule (copy %%{lib:mirage-xen-ocaml:libs} libs))" in
-  let rules_cflags = sxp_of_fmt "(rule (copy %%{lib:mirage-xen-ocaml:cflags} cflags))" in
+  let rules_libs = sxp_of_fmt "(rule (copy %%{lib:mirage-xen-ocaml:libs.sexp} libs.sexp))" in
+  let rules_cflags = sxp_of_fmt "(rule (copy %%{lib:mirage-xen-ocaml:cflags.sexp} cflags.sexp))" in
   Ok ([ rules_cflags; rules_libs; alias; ] @ rules)
 
 let solo5_pkg = function
@@ -732,9 +732,9 @@ let configure_solo5 i ~name ~binary_location ~target =
     | `Hvt -> configure_solo5_hvt i ~name ~binary_location
     | _ -> configure_solo5_default ~name ~binary_location ~target )
   >>= fun base_rules ->
-  let rule_libs = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:libs} libs))" in
+  let rule_libs = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:libs.sexp} libs.sexp))" in
   let rule_ldflags = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:ldflags} ldflags))" in
-  let rule_cflags = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:cflags} cflags))" in
+  let rule_cflags = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:cflags.sexp} cflags.sexp))" in
   let rule_ld = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:ld} ld))" in
   let rule_libdir = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:libdir} libdir))" in
   let rule_manifest_c =
@@ -750,7 +750,7 @@ let configure_solo5 i ~name ~binary_location ~target =
       (library
         (name manifest)
         (modules manifest)
-        (foreign_stubs (language c) (names manifest) (flags (:include cflags))))
+        (foreign_stubs (language c) (names manifest) (flags (:include cflags.sexp))))
       |} in
   Bos.OS.File.write (Fpath.v "manifest.ml") "" >>= fun () ->
   Ok ( rule_ldflags
@@ -863,7 +863,7 @@ let configure_dune i =
   and lflags = "-g" ::
     ( match target with
     | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 ->
-      [ "(:include libs)" ]
+      [ "(:include libs.sexp)" ]
     | #Mirage_key.mode_unix ->
       [] ) in
   let s_output_mode = match target with
