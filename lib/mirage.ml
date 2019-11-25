@@ -723,6 +723,7 @@ let solo5_pkg = function
 let configure_solo5_hvt i ~name ~binary_location =
   let _, post = solo5_pkg `Hvt in
   let out = name ^post in
+  let libs = Info.libraries i in
   let alias =
     sxp_of_fmt {|
       (alias
@@ -733,19 +734,22 @@ let configure_solo5_hvt i ~name ~binary_location =
   let ctx = Info.context i in
   let libs = Info.libraries i in
   let target_debug = Key.(get ctx target_debug) in
+  extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
+  static_libs "mirage-solo5" >>= fun static_libs ->
   let rule_unikernel =
     sxp_of_fmt {|
       (rule
         (targets %s)
         (mode promote)
         (deps %s manifest.o)
-        (action (run %%{read-lines:ld} %%{read-lines:ldflags} manifest.o %s -o %s)))
-      |} out binary_location binary_location out in
+        (action (run %%{read-lines:ld} %%{read-lines:ldflags} manifest.o %s %s %s -o %s)))
+      |} out binary_location (String.concat ~sep:" " c_artifacts) (String.concat ~sep:" " static_libs) binary_location out in
   Ok [ alias; rule_unikernel; ]
 
-let configure_solo5_default ~name ~binary_location ~target =
+let configure_solo5_default i ~name ~binary_location ~target =
   let _, post = solo5_pkg target in
   let out = name ^ post in
+  let libs = Info.libraries i in
   let alias =
     sxp_of_fmt {|
       (alias
@@ -753,20 +757,22 @@ let configure_solo5_default ~name ~binary_location ~target =
         (enabled_if (= %%{context_name} "mirage-freestanding"))
         (deps %s))
       |} Key.pp_target target out in
+  extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
+  static_libs "mirage-solo5" >>= fun static_libs ->
   let rule_unikernel =
     sxp_of_fmt {|
       (rule
         (targets %s)
         (mode promote)
         (deps %s)
-        (action (run %%{read-lines:ld} %%{read-lines:ldflags} %s -o %s)))
-      |} out binary_location binary_location out in
+        (action (run %%{read-lines:ld} %%{read-lines:ldflags} %s %s %s -o %s)))
+      |} out binary_location (String.concat ~sep:" " c_artifacts) (String.concat ~sep:" " static_libs) binary_location out in
   Ok [ alias; rule_unikernel; ]
 
 let configure_solo5 i ~name ~binary_location ~target =
   ( match target with
     | `Hvt -> configure_solo5_hvt i ~name ~binary_location
-    | _ -> configure_solo5_default ~name ~binary_location ~target )
+    | _ -> configure_solo5_default i ~name ~binary_location ~target )
   >>= fun base_rules ->
   let rule_libs = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:libs.sexp} libs.sexp))" in
   let rule_ldflags = sxp_of_fmt "(rule (copy %%{lib:ocaml-freestanding:ldflags} ldflags))" in
@@ -897,17 +903,12 @@ let configure_dune i =
     @ (match target with #Mirage_key.mode_unix -> [ "-thread" ] | _ -> [])
     @ (if terminal () then [ "-color"; "always" ] else [])
     @ (match custom_runtime with Some runtime -> [ "-runtime-variant"; runtime ] | _ -> []) in
-  let lflags =
+  let lflags = "-g" ::
     ( match target with
-    | #Mirage_key.mode_xen ->
-      Ok [ "-g"; "(:include libs.sexp)" ]
-    | #Mirage_key.mode_solo5 ->
-      extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
-      static_libs "mirage-solo5" >>= fun static_libs ->
-      Ok ("-g" :: "(:include libs.sexp)" :: (List.concat [ c_artifacts; static_libs; ]))
+    | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 ->
+      [ "(:include libs.sexp)" ]
     | #Mirage_key.mode_unix ->
-      Ok [ "-g" ] ) in
-  lflags >>= fun lflags ->
+      [] ) in
   let s_output_mode = match target with
     | #Mirage_key.mode_unix -> "(native exe)"
     | #Mirage_key.mode_solo5 | #Mirage_key.mode_xen -> "(native object)" in
