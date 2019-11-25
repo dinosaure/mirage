@@ -243,6 +243,42 @@ let terminal () =
   in
   not dumb && isatty
 
+(* Implement something similar to the @name/file extended names of findlib. *)
+let rec expand_name ~lib param =
+  match String.cut param ~sep:"@" with
+  | None -> param
+  | Some (prefix, name) -> match String.cut name ~sep:"/" with
+    | None              -> prefix ^ Fpath.(to_string (v lib / name))
+    | Some (name, rest) ->
+      let rest = expand_name ~lib rest in
+      prefix ^ Fpath.(to_string (v lib / name / rest))
+
+(* Get the linker flags for any extra C objects we depend on.
+ * This is needed when building a Xen/Solo5 image as we do the link manually. *)
+let extra_c_artifacts target pkgs =
+  Lazy.force opam_prefix >>= fun prefix ->
+  let lib = prefix ^ "/lib" in
+  let format = Fmt.strf "%%d\t%%(%s_linkopts)" target
+  and predicates = "native"
+  in
+  query_ocamlfind ~recursive:true ~format ~predicates pkgs >>= fun data ->
+  let r = List.fold_left (fun acc line ->
+      match String.cut line ~sep:"\t" with
+      | None -> acc
+      | Some (dir, ldflags) ->
+        if ldflags <> "" then begin
+          let ldflags = String.cuts ldflags ~sep:" " in
+          let ldflags = List.map (expand_name ~lib) ldflags in
+          acc @ ("-L" ^ dir) :: ldflags
+        end else
+          acc
+    ) [] data
+  in
+  R.ok r
+
+let static_libs pkg_config_deps =
+  pkg_config pkg_config_deps [ "--static" ; "--libs" ]
+
 (** Configure *)
 
 let configure_main_libvirt_xml ~root ~name =
@@ -859,13 +895,18 @@ let configure_dune i =
     @ (if warn_error then [ "-warn-error"; "+1..49" ] else [])
     @ (match target with #Mirage_key.mode_unix -> [ "-thread" ] | _ -> [])
     @ (if terminal () then [ "-color"; "always" ] else [])
-    @ (match custom_runtime with Some runtime -> [ "-runtime-variant"; runtime ] | _ -> [])
-  and lflags = "-g" ::
+    @ (match custom_runtime with Some runtime -> [ "-runtime-variant"; runtime ] | _ -> []) in
+  let lflags =
     ( match target with
-    | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 ->
-      [ "(:include libs.sexp)" ]
+    | #Mirage_key.mode_xen ->
+      Ok [ "-g"; "(:include libs.sexp)" ]
+    | #Mirage_key.mode_solo5 ->
+      extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
+      static_libs "mirage-solo5" >>= fun static_libs ->
+      Ok ("-g" :: "(:include libs.sexp)" :: (List.concat [ c_artifacts; static_libs; ]))
     | #Mirage_key.mode_unix ->
-      [] ) in
+      Ok [ "-g" ] ) in
+  lflags >>= fun lflags ->
   let s_output_mode = match target with
     | #Mirage_key.mode_unix -> "(native exe)"
     | #Mirage_key.mode_solo5 | #Mirage_key.mode_xen -> "(native object)" in
@@ -1024,42 +1065,6 @@ let compile target =
     | Some backend -> Bos.Cmd.(v "dune" % "build" % ("@" ^ target_name) % "-x" % backend) in
   Log.info (fun m -> m "executing %a" Bos.Cmd.pp cmd) ;
   Bos.OS.Cmd.run cmd
-
-(* Implement something similar to the @name/file extended names of findlib. *)
-let rec expand_name ~lib param =
-  match String.cut param ~sep:"@" with
-  | None -> param
-  | Some (prefix, name) -> match String.cut name ~sep:"/" with
-    | None              -> prefix ^ Fpath.(to_string (v lib / name))
-    | Some (name, rest) ->
-      let rest = expand_name ~lib rest in
-      prefix ^ Fpath.(to_string (v lib / name / rest))
-
-(* Get the linker flags for any extra C objects we depend on.
- * This is needed when building a Xen/Solo5 image as we do the link manually. *)
-let extra_c_artifacts target pkgs =
-  Lazy.force opam_prefix >>= fun prefix ->
-  let lib = prefix ^ "/lib" in
-  let format = Fmt.strf "%%d\t%%(%s_linkopts)" target
-  and predicates = "native"
-  in
-  query_ocamlfind ~recursive:true ~format ~predicates pkgs >>= fun data ->
-  let r = List.fold_left (fun acc line ->
-      match String.cut line ~sep:"\t" with
-      | None -> acc
-      | Some (dir, ldflags) ->
-        if ldflags <> "" then begin
-          let ldflags = String.cuts ldflags ~sep:" " in
-          let ldflags = List.map (expand_name ~lib) ldflags in
-          acc @ ("-L" ^ dir) :: ldflags
-        end else
-          acc
-    ) [] data
-  in
-  R.ok r
-
-let static_libs pkg_config_deps =
-  pkg_config pkg_config_deps [ "--static" ; "--libs" ]
 
 let ldflags pkg = pkg_config pkg ["--variable=ldflags"]
 
