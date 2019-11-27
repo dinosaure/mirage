@@ -270,7 +270,7 @@ let extra_c_artifacts target pkgs =
         if ldflags <> "" then begin
           let ldflags = String.cuts ldflags ~sep:" " in
           let ldflags = List.map (expand_name ~lib) ldflags in
-          acc @ ("-I " ^ dir) :: ldflags
+          acc @ ("-L" ^ dir) :: ldflags
         end else
           acc
     ) [] data
