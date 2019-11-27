@@ -146,8 +146,8 @@ let process_argv argv =
     | `Version -> Ok `Version
     | `Help -> Ok `Help )
 
-let with_ccopt_L path =
-  [ "-ccopt"; "-L" ^ Fpath.to_string path ]
+let with_I path =
+  [ "-I"; Fpath.to_string path ]
 
 let with_cclib_l = function
   | `Filename path -> [ "-cclib"; "-l:" ^ Fpath.to_string path ]
@@ -163,7 +163,7 @@ let run_with_binary argv =
   Log.debug (fun m -> m "Start to ocamlify: %a" Fmt.(Dump.array string) argv) ;
   process_argv argv |> function
   | Ok (`Do ((directories, libraries), other_args)) ->
-    let a = List.(concat (map with_ccopt_L directories)) in
+    let a = List.(concat (map with_I directories)) in
     let b = List.(concat (map with_cclib_l libraries)) in
     let c = List.(concat (map with_ccopt other_args)) in
     Ok (a @ b @ c)
