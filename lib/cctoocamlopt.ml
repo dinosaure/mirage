@@ -1,5 +1,7 @@
 open Rresult
 
+module Log = Mirage_impl_misc.Log
+
 let search directories library =
   let rec go = function
     | [] -> R.error_msgf "Library <%a> does not exist." Fpath.pp library
@@ -11,17 +13,22 @@ let search directories library =
   go directories
 
 let resolve directories libraries =
+  Log.debug (fun m -> m "Start to resolve static libraries into: %a" Fmt.(Dump.list Fpath.pp) directories) ;
   let rec go resolved = function
     | [] -> R.ok (List.rev resolved)
     | `Name library :: r ->
+      Log.debug (fun m -> m "Search -l%s into library directories" library) ;
       let path = Fpath.(v ("lib" ^ library) + "a") in
       search directories path >>= fun x -> go (x :: resolved) r
     | `Filename path :: r ->
       if Fpath.is_rel path
-      then search directories path >>= fun x -> go (x :: resolved) r
-      else Bos.OS.File.exists path >>= function
+      then ( Log.debug (fun m -> m "Seach -l:%a into library directories" Fpath.pp path)
+           ; search directories path >>= fun x -> go (x :: resolved) r )
+      else
+        ( Log.debug (fun m -> m "Search -l%a into library directories" Fpath.pp path)
+        ; Bos.OS.File.exists path >>= function
         | true -> go (path :: resolved) r
-        | false -> R.error_msgf "Library <%a> does not exist." Fpath.pp path in
+        | false -> R.error_msgf "Library <%a> does not exist." Fpath.pp path ) in
   go [] libraries >>= fun _ ->
   Ok (directories, libraries)
 
