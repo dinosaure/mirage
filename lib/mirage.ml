@@ -211,6 +211,7 @@ let app_info = Functoria_app.app_info ~type_modname:"Mirage_info" ()
 
 (** Utils *)
 
+let ( <.> ) f g = fun x -> f (g x)
 let sxp_of_fmt fmt = Fmt.kstrf Sexp.of_string fmt
 
 let opam_prefix =
@@ -900,10 +901,10 @@ let configure_dune i =
     @ (match custom_runtime with Some runtime -> [ "-runtime-variant"; runtime ] | _ -> []) in
   extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
   static_libs "mirage-solo5" >>= fun static_libs ->
+  Cctoocamlopt.run (Array.of_list (c_artifacts @ static_libs)) >>= fun opt_flags ->
   let lflags = "-g" ::
     ( match target with
-    | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 ->
-      [ "(:include libs.sexp)" ] @ c_artifacts @ static_libs
+    | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 -> opt_flags
     | #Mirage_key.mode_unix ->
       [] ) in
   let s_output_mode = match target with
@@ -1272,7 +1273,12 @@ module Project = struct
           common
 
       method! build = build
-      method! configure = configure
+      method! configure =
+        R.reword_error
+          (function
+            | `Cmd _ -> `Msg "error while linking process"
+            | `Msg err -> `Msg err)
+        <.> configure
       method! clean = clean
       method! connect _ _mod _names = "Lwt.return_unit"
       method! deps = List.map abstract jobs
