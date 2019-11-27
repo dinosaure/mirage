@@ -160,6 +160,7 @@ type error =
 
 let run_with_binary argv =
   if Array.length argv = 0 then Fmt.invalid_arg "run_with_binary: must have, at least, one argument" ;
+  Log.debug (fun m -> m "Start to ocamlify: %a" Fmt.(Dump.array string) argv) ;
   process_argv argv |> function
   | Ok (`Do ((directories, libraries), other_args)) ->
     let a = List.(concat (map with_ccopt_L directories)) in
