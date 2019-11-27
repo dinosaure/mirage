@@ -153,8 +153,6 @@ let with_cclib_l = function
   | `Filename path -> [ "-cclib"; "-l:" ^ Fpath.to_string path ]
   | `Name name -> [ "-cclib"; "-l" ^ name ]
 
-let with_ccopt x = [ "-ccopt"; x ]
-
 type error =
   [ `Cmd of [ `Exn | `Parse | `Term ] | `Msg of string ]
 
@@ -165,7 +163,7 @@ let run_with_binary argv =
   | Ok (`Do ((directories, libraries), other_args)) ->
     let a = List.(concat (map with_I directories)) in
     let b = List.(concat (map with_cclib_l libraries)) in
-    let c = List.(concat (map with_ccopt other_args)) in
+    let c = other_args in
     Ok (a @ b @ c)
   | Ok `Version -> Ok [] (* XXX(dinosaure): do nothing. *)
   | Ok `Help -> Ok [] (* XXX(dinosaure): do nothing. *)
