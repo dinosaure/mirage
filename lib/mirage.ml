@@ -269,7 +269,7 @@ let extra_c_artifacts target pkgs =
         if ldflags <> "" then begin
           let ldflags = String.cuts ldflags ~sep:" " in
           let ldflags = List.map (expand_name ~lib) ldflags in
-          acc @ ("-L" ^ dir) :: ldflags
+          acc @ ("-I" ^ dir) :: ldflags
         end else
           acc
     ) [] data
@@ -734,16 +734,14 @@ let configure_solo5_hvt i ~name ~binary_location =
   let ctx = Info.context i in
   let libs = Info.libraries i in
   let target_debug = Key.(get ctx target_debug) in
-  extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
-  static_libs "mirage-solo5" >>= fun static_libs ->
   let rule_unikernel =
     sxp_of_fmt {|
       (rule
         (targets %s)
         (mode promote)
         (deps %s manifest.o)
-        (action (run %%{read-lines:ld} %%{read-lines:ldflags} manifest.o %s %s %s -o %s)))
-      |} out binary_location (String.concat ~sep:" " c_artifacts) (String.concat ~sep:" " static_libs) binary_location out in
+        (action (run %%{read-lines:ld} %%{read-lines:ldflags} manifest.o %s -o %s)))
+      |} out binary_location binary_location out in
   Ok [ alias; rule_unikernel; ]
 
 let configure_solo5_default i ~name ~binary_location ~target =
@@ -757,16 +755,14 @@ let configure_solo5_default i ~name ~binary_location ~target =
         (enabled_if (= %%{context_name} "mirage-freestanding"))
         (deps %s))
       |} Key.pp_target target out in
-  extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
-  static_libs "mirage-solo5" >>= fun static_libs ->
   let rule_unikernel =
     sxp_of_fmt {|
       (rule
         (targets %s)
         (mode promote)
         (deps %s)
-        (action (run %%{read-lines:ld} %%{read-lines:ldflags} %s %s %s -o %s)))
-      |} out binary_location (String.concat ~sep:" " c_artifacts) (String.concat ~sep:" " static_libs) binary_location out in
+        (action (run %%{read-lines:ld} %%{read-lines:ldflags} %s -o %s)))
+      |} out binary_location binary_location out in
   Ok [ alias; rule_unikernel; ]
 
 let configure_solo5 i ~name ~binary_location ~target =
@@ -902,10 +898,12 @@ let configure_dune i =
     @ (match target with #Mirage_key.mode_unix -> [ "-thread" ] | _ -> [])
     @ (if terminal () then [ "-color"; "always" ] else [])
     @ (match custom_runtime with Some runtime -> [ "-runtime-variant"; runtime ] | _ -> []) in
+  extra_c_artifacts "freestanding" libs >>= fun c_artifacts ->
+  static_libs "mirage-solo5" >>= fun static_libs ->
   let lflags = "-g" ::
     ( match target with
     | #Mirage_key.mode_xen | #Mirage_key.mode_solo5 ->
-      [ "(:include libs.sexp)" ]
+      [ "(:include libs.sexp)" ] @ c_artifacts @ static_libs
     | #Mirage_key.mode_unix ->
       [] ) in
   let s_output_mode = match target with
@@ -947,7 +945,7 @@ let configure_dune_workspace i =
           (context (default
             (name mirage-%s)
             (host default)
-            (env (_ (c_flags (:include cflags))))))
+            (env (_ (c_flags (:include cflags.sexp))))))
           |} (variant_of_target target) ]
     | #Mirage_key.mode_unix -> [] in
   let rules = lang :: profile_release :: base_context :: extra_contexts in
