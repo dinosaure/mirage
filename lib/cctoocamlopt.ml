@@ -22,7 +22,7 @@ let resolve directories libraries =
       search directories path >>= fun x -> go (x :: resolved) r
     | `Filename path :: r ->
       if Fpath.is_rel path
-      then ( Log.debug (fun m -> m "Seach -l:%a into library directories" Fpath.pp path)
+      then ( Log.debug (fun m -> m "Search -l:%a into library directories" Fpath.pp path)
            ; search directories path >>= fun x -> go (x :: resolved) r )
       else
         ( Log.debug (fun m -> m "Search -l%a into library directories" Fpath.pp path)
