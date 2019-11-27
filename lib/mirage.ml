@@ -251,7 +251,7 @@ let rec expand_name ~lib param =
     | None              -> prefix ^ Fpath.(to_string (v lib / name))
     | Some (name, rest) ->
       let rest = expand_name ~lib rest in
-      prefix ^ Fpath.(to_string (v lib / name / rest))
+      "-cclib " ^ prefix ^ Fpath.(to_string (v lib / name / rest))
 
 (* Get the linker flags for any extra C objects we depend on.
  * This is needed when building a Xen/Solo5 image as we do the link manually. *)
@@ -269,7 +269,7 @@ let extra_c_artifacts target pkgs =
         if ldflags <> "" then begin
           let ldflags = String.cuts ldflags ~sep:" " in
           let ldflags = List.map (expand_name ~lib) ldflags in
-          acc @ ("-I" ^ dir) :: ldflags
+          acc @ ("-I " ^ dir) :: ldflags
         end else
           acc
     ) [] data
