@@ -17,7 +17,7 @@
  *)
 
 open Astring
-open Action.Infix
+open Action.Syntax
 
 type t = Device_graph.t
 
@@ -106,7 +106,10 @@ let find_all_devices info g i =
   Device_graph.find_all g p
 
 let iter_actions f t =
-  let f v res = res >>= fun () -> f v in
+  let f v res = 
+    let* () = res 
+    in f v 
+  in
   Device_graph.fold f t (Action.ok ())
 
 let configure info t =
@@ -171,7 +174,7 @@ let generate_connects ?(init = []) info t =
         append_main info "connect" "%a" emit_connect
           (var_name, arg_names, Device.connect c info impl_name)
   in
-  iter_actions f t >>= fun () ->
+  let* () = iter_actions f t in
   let main_name = Device_graph.var_name (Device_graph.find_root t) in
   let init_names =
     List.fold_left

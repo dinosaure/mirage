@@ -16,7 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-open Action.Infix
+open Action.Syntax
 open Astring
 
 type abstract_key = Key.t
@@ -149,8 +149,9 @@ let extend ?packages ?packages_v ?(dune = nil) ?(pre_configure = niet)
   in
   let packages = merge_packages packages packages_v in
   let configure i =
-    pre_configure i >>= fun () ->
-    t.configure i >>= fun () -> post_configure i
+    let* () = pre_configure i in
+    let* () = t.configure i in 
+    post_configure i
   in
   let dune i = dune i @ t.dune i in
   { t with packages; configure; dune; files }
