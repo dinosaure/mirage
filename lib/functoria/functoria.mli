@@ -186,3 +186,4 @@ module Engine = Engine
 module DSL = DSL
 module Cli = Cli
 module Action = Action
+module Dune = Dune
