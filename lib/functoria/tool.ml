@@ -39,15 +39,10 @@ module Make (P : S) = struct
 
   let build_dir t = Fpath.parent t.Cli.config_file
 
-  let context_file args =
-    match args.Cli.context_file with
-    | Some f -> f
-    | None ->
-        let dir = Fpath.parent args.Cli.config_file in
-        Fpath.(normalize (dir / (P.name ^ ".context")))
+   let context_file t = Context_cache.file ~name:P.name t
 
   let add_context_file t argv =
-    match Cli.peek_context_file ~mname:P.name argv with
+     match t.Cli.context_file with
     | Some _ -> Action.ok argv
     | None ->
         let file = context_file t in
