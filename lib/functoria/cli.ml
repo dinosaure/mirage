@@ -34,7 +34,7 @@ let description_section = "DESCRIBE OPTIONS"
 type query_kind =
   [ `Name
   | `Packages
-  | `Opam
+  | `Opam of [ `Global | `Local ]
   | `Install
   | `Files of [ `Configure | `Build ]
   | `Makefile ]
@@ -43,7 +43,8 @@ let query_kinds : (string * query_kind) list =
   [
     ("name", `Name);
     ("packages", `Packages);
-    ("opam", `Opam);
+    ("local.opam", `Opam `Local);
+    ("global.opam", `Opam `Global);    
     ("install", `Install);
     ("files-configure", `Files `Configure);
     ("files-build", `Files `Build);
@@ -151,32 +152,32 @@ let kind =
   in
   Arg.(value & pos 0 (enum query_kinds) `Packages & doc)
 
-type 'a args = {
-  context : 'a;
-  config_file : Fpath.t;
-  context_file : Fpath.t option;
-  output : string option;
-  dry_run : bool;
-}
-
-type 'a configure_args = { args : 'a args; depext : bool }
-
-type 'a build_args = 'a args
-
-type 'a clean_args = 'a args
-
-type 'a help_args = 'a args
-
-type 'a describe_args = {
-  args : 'a args;
-  dotcmd : string;
-  dot : bool;
-  eval : bool option;
-}
-
-type 'a query_args = { args : 'a args; kind : query_kind; depext : bool }
-
-type 'a action =
+  type 'a args = {
+    context : 'a;
+    config_file : Fpath.t;
+    context_file : Fpath.t option;
+    output : string option;
+    dry_run : bool;
+  }
+  
+  type 'a configure_args = { args : 'a args; depext : bool }
+  
+  type 'a build_args = 'a args
+  
+  type 'a clean_args = 'a args
+  
+  type 'a help_args = 'a args
+  
+  type 'a describe_args = {
+    args : 'a args;
+    dotcmd : string;
+    dot : bool;
+    eval : bool option;
+  }
+  
+  type 'a query_args = { args : 'a args; kind : query_kind; depext : bool }
+  
+  type 'a action =
   | Configure of 'a configure_args
   | Query of 'a query_args
   | Describe of 'a describe_args
@@ -261,7 +262,7 @@ let args ~with_setup context mname =
  * Subcommand specifications
  *)
 
-module Subcommands = struct
+ module Subcommands = struct
   (** The 'configure' subcommand *)
   let configure ~with_setup mname context =
     ( Term.(
