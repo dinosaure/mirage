@@ -32,12 +32,7 @@ let query_section = "QUERY OPTIONS"
 let description_section = "DESCRIBE OPTIONS"
 
 type query_kind =
-  [ `Name
-  | `Packages
-  | `Opam of [ `Global | `Local ]
-  | `Install
-  | `Files of [ `Configure | `Build ]
-  | `Makefile ]
+  [ `Name | `Packages | `Opam of [ `Global | `Local ] | `Files | `Makefile ]
 
 let query_kinds : (string * query_kind) list =
   [
@@ -45,9 +40,7 @@ let query_kinds : (string * query_kind) list =
     ("packages", `Packages);
     ("local.opam", `Opam `Local);
     ("global.opam", `Opam `Global);
-    ("install", `Install);
-    ("files-configure", `Files `Configure);
-    ("files-build", `Files `Build);
+    ("files", `Files);
     ("Makefile", `Makefile);
   ]
 

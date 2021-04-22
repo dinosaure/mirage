@@ -63,12 +63,7 @@ type 'a help_args = 'a args
 (** The type for arguments of the [help] sub-command. *)
 
 type query_kind =
-  [ `Name
-  | `Packages
-  | `Opam of [ `Local | `Global ]
-  | `Install
-  | `Files of [ `Configure | `Build ]
-  | `Makefile ]
+  [ `Name | `Packages | `Opam of [ `Local | `Global ] | `Files | `Makefile ]
 
 val pp_query_kind : query_kind Fmt.t
 (** [pp_query_kind] is the pretty-printer for query kinds. *)

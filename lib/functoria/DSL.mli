@@ -167,9 +167,7 @@ val impl :
   ?extra_deps:abstract_impl list ->
   ?connect:(info -> string -> string list -> string) ->
   ?configure:(info -> unit Action.t) ->
-  ?files:(info -> [ `Configure | `Build ] -> Fpath.t list) ->
-  ?build:(info -> unit Action.t) ->
-  ?clean:(info -> unit Action.t) ->
+  ?files:(info -> Fpath.t list) ->
   string ->
   'a typ ->
   'a impl
