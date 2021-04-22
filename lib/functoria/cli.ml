@@ -16,7 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-let setup_log style_renderer level =
+ let setup_log style_renderer level =
   Fmt_tty.setup_std_outputs ?style_renderer ();
   Logs.set_level level;
   Logs.set_reporter (Logs_fmt.reporter ())
@@ -36,6 +36,7 @@ type query_kind =
   | `Packages
   | `Opam of [ `Global | `Local ]
   | `Files
+  | `Dune of [ `Config | `Build | `Project | `Workspace | `Dist ]
   | `Makefile ]
 
 let query_kinds : (string * query_kind) list =
@@ -43,9 +44,14 @@ let query_kinds : (string * query_kind) list =
     ("name", `Name);
     ("packages", `Packages);
     ("local.opam", `Opam `Local);
-    ("global.opam", `Opam `Global);    
+    ("global.opam", `Opam `Global);
     ("files", `Files);
     ("Makefile", `Makefile);
+    ("dune.config", `Dune `Config);
+    ("dune.build", `Dune `Build);
+    ("dune-project", `Dune `Project);
+    ("dune-workspace", `Dune `Workspace);
+    ("dune.dist", `Dune `Dist);
   ]
 
 let setup ~with_setup =
@@ -176,41 +182,41 @@ let kind =
   in
   Arg.(value & pos 0 (enum query_kinds) `Packages & doc)
 
-  type 'a args = {
-    context : 'a;
-    config_file : Fpath.t;
-    context_file : Fpath.t option;
-    output : string option;
-    dry_run : bool;
-  }
-  
+type 'a args = {
+  context : 'a;
+  config_file : Fpath.t;
+  context_file : Fpath.t option;
+  output : string option;
+  dry_run : bool;
+}
+
 type 'a configure_args = {
   args : 'a args;
   depext : bool;
   extra_repo : string option;
 }
-  
-  type 'a build_args = 'a args
-  
-  type 'a clean_args = 'a args
-  
-  type 'a help_args = 'a args
-  
-  type 'a describe_args = {
-    args : 'a args;
-    dotcmd : string;
-    dot : bool;
-    eval : bool option;
-  }
-  
+
+type 'a build_args = 'a args
+
+type 'a clean_args = 'a args
+
+type 'a help_args = 'a args
+
+type 'a describe_args = {
+  args : 'a args;
+  dotcmd : string;
+  dot : bool;
+  eval : bool option;
+}
+
 type 'a query_args = {
   args : 'a args;
   kind : query_kind;
   depext : bool;
   extra_repo : string option;
 }
-  
-  type 'a action =
+
+type 'a action =
   | Configure of 'a configure_args
   | Query of 'a query_args
   | Describe of 'a describe_args
@@ -295,7 +301,7 @@ let args ~with_setup context mname =
  * Subcommand specifications
  *)
 
- module Subcommands = struct
+module Subcommands = struct
   (** The 'configure' subcommand *)
   let configure ~with_setup mname context =
     ( Term.(

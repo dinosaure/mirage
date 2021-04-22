@@ -64,6 +64,7 @@ type query_kind =
   | `Packages
   | `Opam of [ `Local | `Global ]
   | `Files
+  | `Dune of [ `Config | `Build | `Project | `Workspace | `Dist ]
   | `Makefile ]
 
 val pp_query_kind : query_kind Fmt.t
