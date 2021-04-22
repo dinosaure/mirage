@@ -32,6 +32,7 @@ module Engine = Engine
 module DSL = DSL
 module Cli = Cli
 module Action = Action
+module Dune = Dune
 
 module type DSL = module type of DSL
 
