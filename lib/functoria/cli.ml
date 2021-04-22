@@ -440,11 +440,6 @@ let peek_args ?(with_setup = false) ~mname argv =
   | _, `Ok b | Some b, _ -> b
   | _ -> assert false
 
-let peek_context_file ~mname argv =
-  match Term.eval_peek_opts ~argv (context_file mname) with
-  | _, `Ok b -> b
-  | _ -> None
-
 let eval ?(with_setup = true) ?help_ppf ?err_ppf ~name ~version ~configure
     ~query ~describe ~build ~clean ~help ~mname argv =
   Cmdliner.Term.eval_choice ?help:help_ppf ?err:err_ppf ~argv ~catch:false

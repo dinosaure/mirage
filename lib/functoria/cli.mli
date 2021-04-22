@@ -29,9 +29,6 @@ type 'a args = {
 }
 (** The type for global arguments. *)
 
-val peek_context_file : mname:string -> string array -> Fpath.t option
-(** [peek_context_file] reads the [--context-file] option on the command-line. *)
-
 val peek_args : ?with_setup:bool -> mname:string -> string array -> unit args
 (** [peek_args ?with_setup argv] parses the global command-line arguments. If
     [with_setup] is set (by default it is), interprets [-v] and [--color] to
