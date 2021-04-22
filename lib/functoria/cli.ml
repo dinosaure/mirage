@@ -32,7 +32,12 @@ let query_section = "QUERY OPTIONS"
 let description_section = "DESCRIBE OPTIONS"
 
 type query_kind =
-  [ `Name | `Packages | `Opam of [ `Global | `Local ] | `Files | `Makefile ]
+  [ `Name
+  | `Packages
+  | `Opam of [ `Global | `Local ]
+  | `Files
+  | `Dune of [ `Config | `Build | `Project | `Workspace | `Dist ]
+  | `Makefile ]
 
 let query_kinds : (string * query_kind) list =
   [
@@ -42,6 +47,11 @@ let query_kinds : (string * query_kind) list =
     ("global.opam", `Opam `Global);
     ("files", `Files);
     ("Makefile", `Makefile);
+    ("dune.config", `Dune `Config);
+    ("dune.build", `Dune `Build);
+    ("dune-project", `Dune `Project);
+    ("dune-workspace", `Dune `Workspace);
+    ("dune.dist", `Dune `Dist);
   ]
 
 let setup ~with_setup =
