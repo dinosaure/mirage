@@ -61,7 +61,7 @@ type 'a help_args = 'a args
 type query_kind =
   [ `Name
   | `Packages
-  | `Opam
+  | `Opam of [ `Local | `Global ]
   | `Install
   | `Files of [ `Configure | `Build ]
   | `Makefile ]

@@ -192,8 +192,8 @@ module Make (P : S) = struct
     | `Packages ->
         let pkgs = Info.packages info in
         List.iter (Fmt.pr "%a\n%!" (Package.pp ~surround:"\"")) pkgs
-    | `Opam ->
-        let opam = Info.opam info in
+    | `Opam kind ->
+        let opam = Info.opam ~install kind info in
         Fmt.pr "%a\n%!" Opam.pp opam
     | `Install ->
         let install = Key.eval (Info.context info) (Engine.install info jobs) in

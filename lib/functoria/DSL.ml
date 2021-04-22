@@ -24,6 +24,8 @@ type abstract_key = Key.t
 
 type package = Package.t
 
+type kind = Package.kind
+
 type 'a typ = 'a Type.t
 
 type 'a impl = 'a Impl.t

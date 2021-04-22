@@ -96,7 +96,11 @@ val match_impl : 'b value -> default:'a impl -> ('b * 'a impl) list -> 'a impl
 type package = Package.t
 (** The type for opam packages. *)
 
+type kind = Package.kind
+(** Installation kind of a package. *)
+
 val package :
+  ?kind:kind ->
   ?build:bool ->
   ?sublibs:string list ->
   ?libs:string list ->
