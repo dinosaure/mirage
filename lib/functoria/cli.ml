@@ -35,8 +35,7 @@ type query_kind =
   [ `Name
   | `Packages
   | `Opam of [ `Global | `Local ]
-  | `Install
-  | `Files of [ `Configure | `Build ]
+  | `Files
   | `Makefile ]
 
 let query_kinds : (string * query_kind) list =
@@ -45,9 +44,7 @@ let query_kinds : (string * query_kind) list =
     ("packages", `Packages);
     ("local.opam", `Opam `Local);
     ("global.opam", `Opam `Global);    
-    ("install", `Install);
-    ("files-configure", `Files `Configure);
-    ("files-build", `Files `Build);
+    ("files", `Files);
     ("Makefile", `Makefile);
   ]
 

@@ -72,11 +72,10 @@ let install i x =
     (function Dev c -> Device.install c i | If _ | App -> Installs.empty)
     x
 
-let files info t stage =
+let files info t =
   Impl.collect
     (module Fpath.Set)
-    (function
-      | Dev c -> Device.files c info stage | If _ | App -> Fpath.Set.empty)
+    (function Dev c -> Device.files c info | If _ | App -> Fpath.Set.empty)
     t
 
 (* [module_expresion tbl c args] returns the module expression of
@@ -101,10 +100,6 @@ let iter_actions f t =
     f v
   in
   Device.Graph.fold f t (Action.ok ())
-
-let build info t =
-  let f (Device.Graph.D { dev; _ }) = Device.build dev info in
-  iter_actions f t
 
 let append_main i msg fmt =
   let path = Info.main i in
@@ -169,10 +164,3 @@ let connect ?(init = []) info t =
     |> List.rev
   in
   emit_run info init_names main_name
-
-let clean i t =
-  let f (v : t) =
-    let (D { dev; _ }) = v in
-    Device.clean dev i
-  in
-  iter_actions f t
