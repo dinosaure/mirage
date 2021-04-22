@@ -78,6 +78,19 @@ let files info t =
     (function Dev c -> Device.files c info | If _ | App -> Fpath.Set.empty)
     t
 
+module Dune = struct
+  type t = Dune.stanza list
+
+  let union = ( @ )
+
+  let empty = []
+end
+
+let dune info =
+  Impl.collect (module Dune) @@ function
+  | Dev c -> Device.dune c info
+  | If _ | App -> Dune.empty
+
 (* [module_expresion tbl c args] returns the module expression of
    the functor [c] applies to [args]. *)
 let module_expression fmt (c, args) =

@@ -56,6 +56,7 @@ val v :
   ?keys:Key.t list ->
   ?extra_deps:abstract list ->
   ?connect:(Info.t -> string -> string list -> string) ->
+  ?dune:(Info.t -> Dune.stanza list) ->
   ?configure:(Info.t -> unit Action.t) ->
   ?files:(Info.t -> Fpath.t list) ->
   string ->

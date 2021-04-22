@@ -33,6 +33,10 @@ val install : Info.t -> Impl.abstract -> Install.t Key.value
 val files : Info.t -> Impl.abstract -> Fpath.Set.t
 (** [files i t] is the list of files generated configure-time. *)
 
+val dune : Info.t -> Impl.abstract -> Dune.stanza list
+(** [dune i t] is the list of dune stanzas needed to build the project [t] with
+    the build information [i]. *)
+
 (** {2 Triggering Hooks} *)
 
 type t = Device.Graph.t

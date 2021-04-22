@@ -61,10 +61,10 @@ let if_impl = Impl.if_
 let match_impl = Impl.match_
 
 let impl ?packages ?packages_v ?install ?install_v ?keys ?extra_deps ?connect
-    ?configure ?files module_name module_type =
+    ?dune ?configure ?files module_name module_type =
   of_device
   @@ Device.v ?packages ?packages_v ?install ?install_v ?keys ?extra_deps
-       ?connect ?configure ?files module_name module_type
+       ?connect ?dune ?configure ?files module_name module_type
 
 let main ?packages ?packages_v ?keys ?extra_deps module_name ty =
   let connect _ = Device.start in
