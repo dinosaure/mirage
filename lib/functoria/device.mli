@@ -85,6 +85,11 @@ val nice_name : _ t -> string
     identifier. *)
 
 (** {1 Actions} *)
+val dune : ('a, 'b) t -> Info.t -> Dune.stanza list
+(** [dune t info] are the dune stanza which needs to be generated to build the
+    application. *)
+
+(** {1 Configuration} *)
 
 val configure : ('a, 'b) t -> Info.t -> unit Action.t
 (** [configure t info] is configure hook for [t] the device and the files it
@@ -103,6 +108,7 @@ val v :
   ?keys:Key.t list ->
   ?extra_deps:'b list ->
   ?connect:(Info.t -> string -> string list -> 'a code) ->
+  ?dune:(Info.t -> Dune.stanza list) ->
   ?configure:(Info.t -> unit Action.t) ->
   ?files:(Info.t -> Fpath.t list) ->
   string ->
@@ -112,7 +118,7 @@ val v :
 val extend :
   ?packages:Package.t list ->
   ?packages_v:Package.t list Key.value ->
-  ?files:(Info.t -> [ `Configure | `Build ] -> Fpath.t list) ->
+  ?dune:(Info.t -> Dune.stanza list) ->
   ?pre_configure:(Info.t -> unit Action.t) ->
   ?post_configure:(Info.t -> unit Action.t) ->
   ?files:(Info.t -> Fpath.t list) ->

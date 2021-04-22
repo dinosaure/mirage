@@ -27,6 +27,8 @@ type info = Info.t
 
 type 'a value = 'a Key.value
 
+type 'a code = string
+
 type ('a, 'impl) t = {
   id : 'a Typeid.t;
   module_name : string;
@@ -34,7 +36,8 @@ type ('a, 'impl) t = {
   keys : abstract_key list;
   packages : package list value;
   install : info -> Install.t value;
-  connect : info -> string -> string list -> string;
+  connect : info -> string -> string list -> 'a code;
+  dune : info -> Dune.stanza list;
   configure : info -> unit Action.t;
   files : (info -> Fpath.t list) option;
   extra_deps : 'impl list;
@@ -67,7 +70,7 @@ let default_connect _ _ l =
 
 let niet _ = Action.ok ()
 
-type 'a code = string
+let nil _ = []
 
 let merge empty union a b =
   match (a, b) with
@@ -81,7 +84,7 @@ let merge_packages = merge [] List.append
 let merge_install = merge Install.empty Install.union
 
 let v ?packages ?packages_v ?install ?install_v ?(keys = []) ?(extra_deps = [])
-?(connect = default_connect) ?(configure = niet) ?files module_name module_type =
+    ?(connect = default_connect) ?(dune = nil) ?(configure = niet) ?files module_name module_type =
   let id = Typeid.gen () in
   let packages = merge_packages packages packages_v in
   let install i =
@@ -96,6 +99,7 @@ let v ?packages ?packages_v ?install ?install_v ?(keys = []) ?(extra_deps = [])
     connect;
     packages;
     install;
+    dune;
     configure;
     files;
     extra_deps;
@@ -121,7 +125,7 @@ let files t i =
   | None -> gen
   | Some files -> Fpath.Set.(union gen (of_list (files i)))
 
-let build t = t.build
+let dune t = t.dune
 
 let keys t = t.keys
 
@@ -134,7 +138,7 @@ let uniq t = Fpath.Set.(elements (of_list t))
 
 let exec_hook i = function None -> Action.ok () | Some h -> h i
 
-let extend ?packages ?packages_v ?files ?pre_configure ?post_configure  t =
+let extend ?packages ?packages_v ?dune ?pre_configure ?post_configure ?files t =
   let files =
     match (files, t.files) with
     | None, None -> None
@@ -150,7 +154,11 @@ let extend ?packages ?packages_v ?files ?pre_configure ?post_configure  t =
     exec_hook i post
   in
   let configure = exec pre_configure t.configure post_configure in
-  { t with packages; files; configure }
+  let dune =
+    Option.map (fun dune i -> t.dune i @ dune i) dune
+    |> Option.value ~default:t.dune
+  in
+  { t with packages; files; configure; dune }
 
 let nice_name d =
   module_name d
