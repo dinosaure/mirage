@@ -46,7 +46,11 @@ val pp_args : 'a Fmt.t -> 'a args Fmt.t
 
 (** {1 Sub-commands} *)
 
-type 'a configure_args = { args : 'a args; depext : bool }
+type 'a configure_args = {
+  args : 'a args;
+  depext : bool;
+  extra_repo : string option;
+}
 (** The type for arguments of the [configure] sub-command. *)
 
 type 'a build_args = 'a args
@@ -69,7 +73,12 @@ type query_kind =
 val pp_query_kind : query_kind Fmt.t
 (** [pp_query_kind] is the pretty-printer for query kinds. *)
 
-type 'a query_args = { args : 'a args; kind : query_kind; depext : bool }
+type 'a query_args = {
+  args : 'a args;
+  kind : query_kind;
+  depext : bool;
+  extra_repo : string option;
+}
 (** The type for arguments of the [query] sub-command. *)
 
 type 'a describe_args = {
