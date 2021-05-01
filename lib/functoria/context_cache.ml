@@ -67,8 +67,8 @@ let read file =
 let peek t term =
   match Cmdliner.Term.eval_peek_opts ~argv:t term with
   | Some c, _ | _, `Ok c -> Some c
-  | _ ->
-      Fmt.failwith "Invalid cached configuration. Please run configure again."
+  | _ -> None
+      (* Fmt.failwith "Invalid cached configuration. Please run configure again." *)
 
 let merge t term =
   let cache =
